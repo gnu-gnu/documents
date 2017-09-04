@@ -24,3 +24,5 @@ public interface AuthenticationManager{
 `AuthenticationException`은 런타임 예외입니다. 애플리케이션은 이를 형식이나 애플리케이션의 목적에 따라 포괄적인 방법으로 다룹니다. 즉, 사용자의 코드는 일반적으로 그것을 잡아 내거나 처리할 것이라고 기대하지 않습니다. 예를 들어 인증 실패를 나타내는 페이지를 web UI가 렌더링하고, 백엔드 HTTP서비스는 `WWW-Authenticate `를 컨텍스트에 따라 포함하거나 포함하지 않는 401 응답을 보낼 것입니다.
 
 가장 흔하게 사용하는 `AuthenticationManager`의 구현체는 `ProviderManager`
+
+출처 : https://spring.io/guides/topicals/spring-security-architecture/
