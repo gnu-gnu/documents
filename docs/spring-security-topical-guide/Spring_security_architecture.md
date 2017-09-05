@@ -76,5 +76,6 @@ public class ApplicationSecurity extends WebSecurityConfigurerAdapter {
 
 }
 ```
-(설정 메소드에서 `@Override` 사용) `AuthenticationManagerBuilder`는 단지 전역의 자식인 "로컬" `AuthenticationManagerBuilder`를 생성하는데 사용되었습니다. 
+(설정 메소드에서 `@Override` 사용) `AuthenticationManagerBuilder`는 단지 전역의 자식인 "로컬" `AuthenticationManagerBuilder`를 생성하는데 사용되었습니다.
+
 출처 : https://spring.io/guides/topicals/spring-security-architecture/
