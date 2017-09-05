@@ -38,6 +38,7 @@ public interface AuthenticationProvider{
 때때로 애플리케이션은 보호된 자원들의 논리적인 집합(예를 들어, `/api` 하위 경로 패턴에 부합하는 모든 웹 리소스)을 가집니다. 그리고 각 그룹은 그들만의 전용 `AuthenticationManager`를 가질 수 있습니다. 종종 그것들은 `ProviderManager`이기도 하며, 그들은 부모를 공유합니다. 부모는 모든 공급자들의 대체자 역할을 수행하는 일종의 "전역" 자원입니다.
 
 <img src="https://github.com/spring-guides/top-spring-security-architecture/raw/master/images/authentication.png" width="500">
+
 ###### 자료1. `ProviderManager`를 사용한 `AuthenticationManager` 계층 구조
 
 인증 관리자 맞춤 수정
