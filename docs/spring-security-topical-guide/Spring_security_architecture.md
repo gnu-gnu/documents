@@ -6,7 +6,7 @@ Spring Security Architecture
 
 인증 및 접근제어
 ----------------
-애플리케이션 보안은 두가지 이상 혹은 그 이하의 독립적인 문제로 귀결됩니다. 인증(당신이 누구인가?)과 허가(당신이 할 수 있는 일은 무엇인가?)입니다. 때때로 사람들은 "허가"라는 말 대신 혼란을 일으킬 수 있는 "접근제어"라는 말을 하곤 합니다. 그러나 "허가"라는 말은 다른 곳에서도 매우 많이 사용되기 때문에 이것에 대해 생각 해보는 것은 유용할 수 있습니다. 스프링 시큐리티는 허가로 부터 인증을 분리하도록 설계된 아키텍처를 가지고 있으며, 둘 모두를 위한 전략 및 확장 지점을 가지고 있습니다.
+애플리케이션 보안은 두가지 이상 혹은 그 이하의 독립적인 문제로 귀결됩니다. 인증(당신이 누구인가?)과 권한부여(당신이 할 수 있는 일은 무엇인가?)입니다. 때때로 사람들은 "권한 부여"라는 말 대신 혼란을 일으킬 수 있는 "접근제어"라는 말을 하곤 합니다. 그러나 "권한 부여"라는 말은 다른 곳에서도 매우 많이 사용되기 때문에 이것에 대해 생각 해보는 것은 유용할 수 있습니다. 스프링 시큐리티는 권한 부여로 부터 인증을 분리하도록 설계된 아키텍처를 가지고 있으며, 둘 모두를 위한 전략 및 확장 지점을 가지고 있습니다.
 
 인증
 ----
@@ -31,7 +31,7 @@ public interface AuthenticationProvider{
   boolean supports(Class<?> authentication);
 }
 ```
-`supperts()` 메소드의 `Class<?>`인자는 실제로는 `Class<? extends Authentication>`입니다. (`authentication()`에 전달되는 무언가를 지원하는지만 묻습니다. `ProviderManager`는 `AuthenticationProviders`에 위임하는 방법으로 동일한 애플리케이션에서 여러가지 다른 인증 메카니즘을 지원할 수 있습니다.  만약 `ProviderManager`가 특정한 `Authentication` 인스턴스를 식별하지 못한다면 이것은 생략됩니다.
+`supports()` 메소드의 `Class<?>`인자는 실제로는 `Class<? extends Authentication>`입니다. (`authentication()`에 전달되는 무언가를 지원하는지만 묻습니다. `ProviderManager`는 `AuthenticationProviders`에 위임하는 방법으로 동일한 애플리케이션에서 여러가지 다른 인증 메카니즘을 지원할 수 있습니다.  만약 `ProviderManager`가 특정한 `Authentication` 인스턴스를 식별하지 못한다면 이것은 생략됩니다.
 
 `ProviderManager`는 모든 공급자(providers)가 null을 반환한다면 참고할 수 있는 선택적인 부모를 가지고 잇습니다. 만약 부모가 사용 가능하지 않다면 `null Authentication`은 `AuthenticationException`을 야기합니다.
 
@@ -77,6 +77,32 @@ public class ApplicationSecurity extends WebSecurityConfigurerAdapter {
 
 }
 ```
-(설정 메소드에서 `@Override` 사용) `AuthenticationManagerBuilder`는 단지 전역의 자식인 "로컬" `AuthenticationManagerBuilder`를 생성하는데 사용되었습니다.
+(설정 메소드에서 `@Override` 사용) `AuthenticationManagerBuilder`는 단지 전역의 자식인 "로컬" `AuthenticationManagerBuilder`를 생성하는데 사용되었습니다. 스프링 부트 애플리케이션에서 당신은 전역을 다른 Bean에 `@Autowired` 할 수 있습니다, 그러나 당신은 명시적으로 그것을 노출하지 않는 이상 로컬을 사용할 수는 없습니다.
+
+스프링 부트는 당신이 만든 Bean에 의해 제공되는 `AuthenticationManager`가 선점하지 않는다면, 기본적인 전역 (단지 하나의 사용자를 위한)`AuthenticationManager`를 제공합니다. 당신이 적극적으로 맞춤형 global `AuthenticationManager`를 필요로 하지 않는다면 기본값도 당신이 그다지 걱정을 하지 않아도 될 만큼 충분합니다. 만약 `AuthenticationManager`를 생성하는 어떠한 설정을 한다면, 당신이 보호하는 자원에 대해 부분적으로 이를 수행할 수 있으며, 전역 기본값에 대해서는 걱정하지 마십시오
+
+권한 부여와 접근제어
+---------------
+인증이 성공했다면, 우리는 권한 부여로 눈을 돌릴 수 있습니다, 그리고 여기의 핵심 전략은 `AccessDecisionManager`입니다. 프레임워크에 의해 제공되는 구현체들은 세가지가 있습니다 세가지 모두 `AccessDecisionVoter`에 행동을 위임합니다. `ProviderManager`가 `AuthenticationProviders`에 위임하는 것과 닮아 있습니다.
+
+`AccessDecisionVoter`는 `ConfigAttributes`로 장식된 보안 `Object`와 (본인임을 나타내는)`Authentication`을 고려합니다.
+```java
+boolean supports(ConfigAttribute attribute);
+boolean supports(Class<?> clazz);
+int vote(Authentication authentication, S object,
+        Collection<ConfigAttribute> attributes);
+```
+`Object`는 `AccessDecisionManager`와 `AccessDecisionVoter`의 매개변수 목록에서 전적으로 제네릭입니다. - 이것은 유저가 접근하기를 원하는 무언가(웹 리소스 혹은 자바 클래스에 존재하는 메소드가 두가지 가장 공통된 경우입니다.)를 대표합니다. `ConfigAttributes` 또한 접근에 필요한 권한의 수준을 결정하는 일부 메타데이터 보안가 포함된 `Object`의 장식을 나타내는 제네릭입니다. `ConfigAttribute`는 인터페이스입니다. 그러나 매우 일반적이며 `String`을 반환하는 단 하나의 메소드만을 가지고 있습니다. 그러므로 이 문자열은 어떠한 방법을 통해 리소스 소유자의 의도를 표현하고 누가 그것에 접근할 수 있는지 규칙을 드러냅니다. 전형적인 `ConfigAttribute`는 사용자 역할(예를 들어 `ROLE_ADMIN`이나 `ROLE_AUDIT`)의 이름입니다, 그리고 그것들은 종종 특별한 형식(예를 들어 접두사 `ROLE_`)이나 연산될 필요가 있는 표현식을 가집니다.
+
+대부분의 사람들은 그저 기본적인 `긍정적 동작 기반`(거부가 없다면 접근을 허용하는) `AccessDecisionManager`를 사용합니다. 맞춤형 수정은 투표자(voters)에서 새로운 투표자를 추가하거나, 기존의 투표자가 동작하는 방식을 수정하는 방향으로 일어나는 경향이 있습니다.
+
+`ConfigAttributes`를 Spring Expression Language(SpEL) 표현식으로 사용하는 것은 매우 자주 일어나는 일입니다. 예를 들자면 `isFullyAuthenticated() && hasRole('FOO')`입니다. 이것은 표현식을 다룰 수 있으며, 그것들을 위한 컨텍스트를 생성할 수 있는 `AccessDecisionVoter`가 이것을 지원합니다. 다룰 수 있는 표현식의 범위를 확장하기 위하여 `SecurityExpressionRoot` 및 가끔은 `SecurityExpressionHandler`의 맞춤형 구현이 필요합니다.
+
+웹 보안
+-------
+<img src="https://github.com/spring-guides/top-spring-security-architecture/raw/master/images/filters.png" height="500px">
+
+클라이언트는 애플리케이션에 요청을 전송하고, 컨테이너는 어떤 필터와 서블릿을 적용할지 request URI의 경로에 기반하여 결정합니다. 한 개의 서블릿은 하나의 요청을 다룰 수 있지만, 필터는 사슬을 형성합니다, 그래서 필터들은 순서를 가집니다, 그리고 필터는 스스로 요청을 다루기를 원할 경우 다른 사슬들을 거부할 수 있습니다. 필터는 또한 요청 혹은 내려보내는 필터 혹은 서블릿에서 사용되는 응답을 조작할 수 있습니다. 필터 사슬의 순서는 매우 중요합니다, 그리고 스프링 부트는 이것을 2가지의 메카니즘으로 관리합니다: 하나는 `Filter` 타입의 `@Beans`가 `@Order`을 갖거나, `Ordered` 인터페이스를 구현할 수 있습니다. 또 다른 하나는 그것들이 API를 통해 순서를 스스로 가지는 `FilterRegistrationBean`의 일부가 되는 것입니다.
+
 
 출처 : https://spring.io/guides/topicals/spring-security-architecture/
