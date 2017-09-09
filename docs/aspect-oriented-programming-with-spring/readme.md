@@ -1,3 +1,5 @@
+원문 출처 : https://docs.spring.io/spring/docs/current/spring-framework-reference/html/aop.html
+
 # 11. 스프링에서의 관점 지향 프로그래밍
 
 ## 11.1 들어가기
@@ -55,3 +57,62 @@ Spring AOP는 포괄적인 AOP 솔루션을 제공하기 위해 AspectJ와 경�
 > 스프링 프레임워크의 핵심적인 지침 중 하나는 <i>비침습성</i>입니다: 이것은 당신의 비즈니스/도메인 모델에 프레임워크 종속적인 클래스나 인터페이스를 강제해서는 안 된다는 사고 방식입니다. 그러나, 몇몇 부분에 있어서는 스프링프레임워크는 프레임워크 종속적인 의존성이 당신의 코드베이스에 선택사항으로 남길 수도 있습니다: 그러한 옵션들을 제공하는 이유는 특정 시나리오에서는 그것이 확실히 읽기 쉽거나 그러한 방법으로 특정 기능의 일부를 코드로 작성하기 쉽기 때문입니다. 스프링 프레임워크는 (거의) 언제나 선택의 여지를 남깁니다. : 당신은 자유롭게 특정한 경우나 시나리오에 대해 최적의 선택을 내릴 수 있습니다.
 이번 챕터와 밀접한 관련이 있는 그러한 선택 중 하나는 AOP 프레임워크 (및 AOP 스타일)을 선택하는 것입니다. 당신은 AspectJ 및/혹은 Spring AOP를 택할 수 있습니다, 또한 @AspectJ 어노테이션 스타일의 접근 방식 혹은 Spring XML 설정 방식의 스타일을 선택할 수도 있습니다. 이 챕터가 @AspectJ 스타일의 접근 방식을 먼저 소개하기로 한 것은 Spring 팀이 @AspectJ 어노테이션 스타일의 접근 방식을 Spring XML 설정 스타일보다 선호한다는 것을 의미하지는 않습니다.
 각 스타일을 언제, 어디서 사용해야 하는가에 대한 좀 더 완전한 논의는 [섹션 11.4. "어떤 AOP선언 스타일을 사용할지 선택하기"](https://docs.spring.io/spring/docs/current/spring-framework-reference/html/aop.html#aop-choosing)를 참고하세요.
+
+### 11.1.3 AOP 프록시
+Spring AOP는 기본적으로 표준 JDK <i>동적 프록시</i>를 AOP 프록시로 사용합니다. 이것은 어떠한 인터페이스(혹은 인터페이스들의 집합)든 프록시화 시키는 것을 가능케 합니다.
+Spring AOP는 CGLIB 프록시를 사용할 수도 있습니다. 이것은 인터페이스보다는 클래스를 프록시화하는 데 필요합니다. CGLIB는 비즈니스 객체가 인터페이스를 구현하지 못할 때 기본적으로 사용됩니다. 프로그램에게는 클래스보다는 인터페이스가 좋은 관습이므로 비즈니스 클래스는 일반적으로 하나 이상의 비즈니스 인터페이스를 구현합니다. [CGLIB의 사용을 강제](https://docs.spring.io/spring/docs/current/spring-framework-reference/html/aop.html#aop-proxying)할 수도 있습니다, 이런 경우는 (드물지만) 인터페이스에서 선언되지 않은 메소드에 advise하거나 프록시 된 객체를 구체적인 타입의 메소드에 전달할 필요가 있을 때입니다.
+Spring AOP는 <i>프록시 기반</i>이라는 것을 인식하는 것이 중요합니다. [섹션 11.6.1. "AOP 프록시 이해하기"](https://docs.spring.io/spring/docs/current/spring-framework-reference/html/aop.html#aop-understanding-aop-proxies)를 참조하여 이러한 구현이 구체적으로 무엇을 의미하는지 예제를 살펴보세요.
+
+###11.2 @AspectJ 지원
+@AspectJ는 어노테이션이 붙은 일반적인 자바 클래스로 aspect를 선언하는 스타일을 의미합니다. @AspectJ 스타일은 AspectJ 5 릴리즈의 일부로 [AspectJ 프로젝트](https://www.eclipse.org/aspectj)에서 소개되었습니다. 스프링은 pointcut 파싱과 매칭을 위해 AspectJ에서 지원되는 라이브러리를 활용하여, AspectJ 5와 동일한 어노테이션을 해석합니다. AOP 런타임은 여전히 Spring AOP입니다, 또한 AspectJ 컴파일러나 weaver에 의존성은 없습니다.
+
+> AspectJ 컴파일러나 weaver를 사용하는 것은 완전한 AspectJ 언어 사용을 활성화합니다, 이에 대해서는 [섹션 11.8. "스프링 애플리케이션에서 AspectJ 사용하기"](https://docs.spring.io/spring/docs/current/spring-framework-reference/html/aop.html#aop-using-aspectj)에서 논의합니다.
+
+스프링 설정에서 @AspectJ aspect를 사용하기 위해 @AspectJ aspect 기반의 Spring AOP 설정을 하기 위한 스프링 지원을 활성화 시키고, 그 aspect들에게 advice되었는지 여부에 기반하여 빈들을 <i>autoproxying</i>해야 합니다. autoproxying이란 Bean이 하나 이상의 Aspect에 의해 advise 되었다고 스프링이 정하면, 자동으로 빈이 메소드 실행을 가로채고 원하는대로 advice가 실행된다고 확인하는 프록시를 자동으로 생성하는 것을 의미합니다.
+
+@AspectJ 지원은 XML 혹은 자바 스타일 설정에 의해 활성화 될 수 있습니다. 각 케이스별로 당신은 AspectJ의 `aspectjweaver.jar` 라이브러리가 어플리케이션의 클래스패스에 존재하는지 확인할 필요가 있습니다 (version 1.6.8 혹은 그 이상). 이 라이브러리는 AspectJ 배포판의 `'lib'` 디렉토리 혹은 메이븐 중앙 저장소에서 사용 가능합니다.
+
+#### 자바 설정으로 @AspectJ 지원 활성화하기
+자바 `@Configuration`으로 @AspectJ 지원을 활성화하기 위해서는 `@EnableAspectJAutoProxy` 어노테이션을 추가해야 합니다.
+```Java
+@Configuration
+@EnableAspectJAutoProxy
+public class AppConfig {
+
+}
+```
+
+#### XML 설정으로 @AspectJ 지원 활성화하기
+XML 기반 설정으로 @AspectJ 설정을 활성화하기 위해서는 `aop:aspectj-autoproxy` 요소를 사용하세요
+```xml
+<aop:aspectj-autoproxy/>
+```
+이 설정은 당신이 [챕터 41. XML 스키마 기반 설정](https://docs.spring.io/spring/docs/current/spring-framework-reference/html/xsd-configuration.html)에서 설명하는 스키마 지원을 사용한다고 가정합니다. [섹션 41.2.7. "aop 스키마"](https://docs.spring.io/spring/docs/current/spring-framework-reference/html/xsd-configuration.html#xsd-config-body-schemas-aop)를 참조하여 `aop` 네임스페이스에 태그를 import하는 방법을 알아보세요.
+
+### 11.2.2 aspect 선언하기
+@AspectJ 지원이 활성화 되면, 어플리케이션 컨텍스트에 @AspectJ aspect(`@AspectJ` 어노테이션을 가진) 클래스로 정의된 bean들은 자동적으로 스프링에게 탐색되어 Spring AOP를 설정하는데 사용됩니다. 아래의 예제는 그다지 not-very-useful-aspect를 위해 최소한으로 필요한 정의를 보여줍니다.
+
+`@Aspect` 어노테이션을 가지는 bean 클래스를 가리키는, 애플리케이션 컨텍스트에 존재하는 일반적인 bean 정의:
+```XML
+<bean id="myAspect" class="org.xyz.NotVeryUsefulAspect">
+    <!-- 여기에 일반적인 aspect 속성들을 설정하세요 -->
+</bean>
+```
+그리고 `org.aspectj.lang.annotation.Aspect` 애노테이션이 붙은 `NotVeryUsefulAspect` 클래스 정의입니다.
+```Java
+package org.xyz;
+import org.aspectj.lang.annotation.Aspect;
+
+@Aspect
+public class NotVeryUsefulAspect {
+
+}
+```
+Aspects (`@Aspect` 어노테이션이 붙은 클래스) 는 다른 클래스들과 마찬가지로 메소드와 필드를 가질 것입니다. pointcut, advice 및 (타입 간) 선언 소개를 포함할 것입니다.
+
+> aspect 클래스들을 Spring XML 설정에 일반적인 bean으로 등록하거나, 다른 Spring이 관리하는 bean들과 마찬가지로, 클래스 패스 탐색을 통해 자동 검출할 수 있습니다. 그러나 @Aspect 어노테이션은 클래스패스 자동 검출을 위해서는 <i>충분하지 않다</i>라는 것을 기억하십시오, 그러한 목적으로 개별적인 @Component 어노테이션(혹은 스프링의 컴포넌트 스캐너의 규칙을 만족하는, 대안으로 사용되는 맞춤형 스테레오 타입 어노테이션)을 추가할 필요가 있습니다.
+
+> Spring AOP에서, 자기 자신이 다른 aspect의 advice 대상이 되는 aspect를 가지는 것은 불가능합니다. 클래스에 붙은 @Aspect 어노테이션은 이것을 aspect로 표시합니다, 그러므로 이것은 auto-proxying에서 제외됩니다.
+
+### pointcut 선언하기
+ 
